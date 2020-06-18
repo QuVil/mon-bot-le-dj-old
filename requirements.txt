@@ -12,6 +12,7 @@ jupyter-core==4.6.3
 parso==0.7.0
 pexpect==4.8.0
 pickleshare==0.7.5
+pip-autoremove==0.9.1
 prompt-toolkit==3.0.5
 ptyprocess==0.6.0
 Pygments==2.6.1

@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 /.dir-locals.el
 /creditentials.json
+/credentials_sheets.json
+/creditentials-spotify.json

@@ -134,6 +134,5 @@ dmypy.json
 # Google credentials file
 google-credentials.json
 /.dir-locals.el
-/creditentials.json
-/credentials_sheets.json
-/creditentials-spotify.json
+/credentials-spotify.json
+/credentials-sheets.json

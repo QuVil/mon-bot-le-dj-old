@@ -133,3 +133,5 @@ dmypy.json
 
 # Google credentials file
 google-credentials.json
+/.dir-locals.el
+/creditentials.json

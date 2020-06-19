@@ -1,13 +1,16 @@
 import contributor
-import track
+from data import data
+from track import track
+import utils
 
 def initialize() -> tuple:
-    tracks, ratings = [], []
-    for row in list(data()):
-        current_track = track(row[0], row[1], row[2], row[3], row[4])
+    tracks, ratings = [], {}
+    for label, content in data.data.iterrows():
+        current_track = track.track(content.genre, content.sub_genre, content.artist, content.album, content.song)
         tracks.append(current_track)
-        ratings.append((current_track, [as_real_or_none(row[5 + contributor[0]]) for contributor in CONTRIBUTORS]))
+        ratings[current_track] = { c: utils.as_real_or_none(content[c.index]) for c in contributor.CONTRIBUTORS }
     return (tracks, ratings)
+
 
 def condorcet_method(candidate):
     pass
@@ -15,7 +18,11 @@ def condorcet_method(candidate):
 def schulze_method():
     pass
 
-
 tracks, ratings = initialize()
-for rating in list(ratings):
-    print(rating)
+for t in ratings:
+    for c in ratings[t]:
+        if ratings[t][c]:
+            c.ratings[ratings[t][c]].append(t) 
+
+for c in contributor.CONTRIBUTORS:
+    print("{}: {}".format(c, c.personal_ranking()))

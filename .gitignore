@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Jetbrains folder
+.idea
+
 # C extensions
 *.so
 
@@ -127,6 +130,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# emacs editor specific
 /.dir-locals.el
+
+# spotify credentials file
 /credentials-spotify.json
-/credentials-sheets.json
+
+# Google credentials file
+google-credentials.json

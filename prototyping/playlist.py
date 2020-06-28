@@ -1,7 +1,7 @@
 import random
 
 import pandas as pd
-from data import load_from_api, load_from_cache
+from .data import load_from_api, load_from_cache
 
 KEPT_PEOPLE = ["Qu", "Gr", "Vi", "Ro"]
 DEFAULT_GRADE = 5

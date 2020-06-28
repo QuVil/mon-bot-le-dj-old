@@ -139,3 +139,4 @@ dmypy.json
 
 # Google credentials file
 google-credentials.json
+/cache/

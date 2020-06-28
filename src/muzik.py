@@ -307,13 +307,19 @@ class Muzik:
                          genre, artist, song, ...
         """
         self.__update_token()
+        # get the playlist id of PLAYLIST_NAME
         playlist_id = self.__get_playlist_id()
+        # get the tracks
         track_ids = self.ids[playlist.index].dropna().values
         print(f"Inserting {len(track_ids)} songs in the playlist...")
+        # spotify api "only" handles 100 tracks by requests
+        # so here we split the data
         batch_size = int(len(track_ids)/MAX_TRACK_PER_REQUESTS) + 1
         batches = np.split(track_ids, batch_size)
         str_format = int(math.log(len(batches), 10)) + 1
         print(f"{0:<{str_format}}/{len(batches)} batch inserting...")
+        # the first call `replace_tracks` clear the playlist AND
+        # adds the supplied tracks
         self.__sp_user.user_playlist_replace_tracks(
             self.__user_id,
             playlist_id=playlist_id,
@@ -322,6 +328,7 @@ class Muzik:
         if len(batches) > 1:
             for idx, batch in enumerate(batches[1:]):
                 print(f"{idx+2:<{str_format}}/{len(batches)} batch inserting...")
+                # add the rest of the tracks
                 self.__sp_user.user_playlist_add_tracks(
                     self.__user_id,
                     playlist_id=playlist_id,

@@ -12,6 +12,7 @@ import os
 import base64
 CACHE_DIR = "cache/"
 ACH_IDS = "ids.pkl"
+MISSING_IDS = "missing.csv"
 CRED_PATH_SPOTIFY = "credentials-spotify.json"
 UNAUTHORIZED_ST_CODE = 401
 MAX_TRACK_PER_REQUESTS = 100
@@ -228,6 +229,14 @@ class Muzik:
                   f" : {id} {name} {artist} {album}")
         return ids
 
+    def __update_missing_list(self):
+        """
+        Create a csv file containing every tracks that were not
+        available on spotify
+        """
+        missing = self.ids[self.ids.isnull()]
+        missing.index.to_frame(index=False).to_csv(CACHE_DIR + MISSING_IDS)
+
     def __create_user_playlist(self):
         """
         Creates a new playlist using PLAYLIST_NAME, PLAYLIST_DESC
@@ -303,6 +312,8 @@ class Muzik:
                 print("Local list already updated")
         # save updated list in cache
         self.ids.to_pickle(CACHE_DIR + ACH_IDS)
+        # also updates missing ID list
+        self.__update_missing_list()
 
     def create_playlist(self, playlist):
         """
@@ -316,12 +327,16 @@ class Muzik:
         # get the playlist id of PLAYLIST_NAME
         playlist_id = self.__get_playlist_id()
         # get the tracks
-        track_ids = self.ids[playlist.index].dropna().values
-        print(f"Inserting {len(track_ids)} songs in the playlist...")
+        tracks_all = self.ids[playlist.index]
+        tracks_results = tracks_all.isnull().value_counts()
+        print(f"Adding {tracks_results[False]} tracks,"
+              f" Missing {tracks_results[True]} tracks")
+        tracks_id = tracks_all.dropna().values
+        print(f"Inserting {len(tracks_id)} songs in the playlist...")
         # spotify api "only" handles 100 tracks by requests
         # so here we split the data
-        batch_size = int(len(track_ids)/MAX_TRACK_PER_REQUESTS) + 1
-        batches = np.array_split(track_ids, batch_size)
+        batch_size = int(len(tracks_id)/MAX_TRACK_PER_REQUESTS) + 1
+        batches = np.array_split(tracks_id, batch_size)
         str_format = int(math.log(len(batches), 10)) + 1
         print(f"{0:<{str_format}}/{len(batches)} batch inserting...")
         # the first call `replace_tracks` clear the playlist AND

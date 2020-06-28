@@ -289,7 +289,8 @@ class Muzik:
         # remove the songs that are not anymore in the cached df
         depr = pd.concat([common_songs, old_songs]).drop_duplicates(keep=False)
         to_remove = pd.MultiIndex.from_frame(depr)
-        self.ids = self.ids.drop(to_remove)
+        if len(to_remove) > 0:
+            self.ids = self.ids.drop(to_remove)
         # adds the new songs from the ach sheet
         news = pd.concat([common_songs, new_songs]).drop_duplicates(keep=False)
         if len(news) > 0:

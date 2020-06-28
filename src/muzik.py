@@ -61,10 +61,22 @@ class Muzik:
         return searches
 
     def __fetch_id(self, df):
-        ids = pd.Series(index=df.index, dtype=str, name="ids")
+        """
+        Fetches the Spotify songs id for each provided songs
+        If it cannot find ids for a song, it will be set to None
+        input:
+            - df : a pd.DataFrame with a random index and the
+                   song specific columns (genre, artist, ...)
+        """
+        # small hack to access the data from the index & the columns
+        indexs = pd.MultiIndex.from_frame(df)
+        songs = pd.DataFrame(data=df.values, index=indexs,
+                             columns=df.columns)
+        ids = pd.Series(index=indexs,
+                        dtype=str, name="ids")
         bad_formats = []
-        str_format = int(math.log(len(df), 10)) + 1
-        for idx, (_, content) in enumerate(df.iterrows()):
+        str_format = int(math.log(len(songs), 10)) + 1
+        for idx, (_, content) in enumerate(songs.iterrows()):
             searches = self.__search_string(content)
             bad_format = []
             for search, market in searches:

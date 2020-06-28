@@ -1,6 +1,7 @@
 
 from .color import Color
 import pandas as pd
+import numpy as np
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 import spotipy
 from spotipy import SpotifyException
@@ -13,6 +14,7 @@ CACHE_DIR = "cache/"
 ACH_IDS = "ids.pkl"
 CRED_PATH_SPOTIFY = "credentials-spotify.json"
 UNAUTHORIZED_ST_CODE = 401
+MAX_TRACK_PER_REQUESTS = 100
 MARKETS = ["FR", "US"]
 PLAYLIST_NAME = "Mon Bot le DJ"
 PLAYLIST_COVER = "data/playlist_cover.jpg"
@@ -104,25 +106,35 @@ class Muzik:
             **auth
         ))
 
+    def __refresh_token(self):
+        cached = self.__user_credentials.get_cached_token()
+        refreshed = self.__user_credentials.refresh_access_token(
+            cached["refresh_token"]
+        )
+        self.__sp_user = self.__get_spotify_user(
+            refreshed["access_token"]
+        )
+
     def __update_token(self):
         """
         Updates the token if it has expired
         !! may not work flawlessely (probably not in fact),
         hard to test since the token lasts for 1 hour haha
         """
-        cached = self.__user_credentials.get_cached_token()
-        if self.__user_credentials.is_token_expired(cached):
-            refreshed = self.__user_credentials.refresh_access_token(
-                cached["refresh_token"]
-            )
-            self.__sp_user = self.__get_spotify_user(
-                refreshed["access_token"]
-            )
-        # try:
-        #     _ = self.__sp_user.me()
-        # except SpotifyException as e:
-        #     e.http_status == UNAUTHORIZED_ST_CODE:
-        #     cached = self.__user_credentials.get_cached_token()
+        # cached = self.__user_credentials.get_cached_token()
+        # if self.__user_credentials.is_token_expired(cached):
+        #     refreshed = self.__user_credentials.refresh_access_token(
+        #         cached["refresh_token"]
+        #     )
+        #     self.__sp_user = self.__get_spotify_user(
+        #         refreshed["access_token"]
+        #     )
+        try:
+            _ = self.__sp_user.me()
+        except SpotifyException as e:
+            if e.http_status == UNAUTHORIZED_ST_CODE:
+                print(f"Token expired, refreshing now")
+                self.__refresh_token()
 
     def __search_strings(self, row):
         """
@@ -286,8 +298,29 @@ class Muzik:
             print("Local list already updated")
 
     def create_playlist(self, playlist):
+        self.__update_token()
         playlist_id = self.__get_playlist_id()
-        pass
+        track_ids = self.ids[playlist.index].dropna().values
+        print(f"Inserting {len(track_ids)} songs in the playlist...")
+        batch_size = int(len(track_ids)/MAX_TRACK_PER_REQUESTS) + 1
+        batches = np.split(track_ids, batch_size)
+        str_format = int(math.log(len(batches), 10)) + 1
+        print(f"{0:<{str_format}}/{len(batches)} batch inserting...")
+        self.__sp_user.user_playlist_replace_tracks(
+            self.__user_id,
+            playlist_id=playlist_id,
+            tracks=batches[0]
+        )
+        if len(batches) > 1:
+            for idx, batch in enumerate(batches[1:]):
+                print(f"{idx+2:<{str_format}}/{len(batches)} batch inserting...")
+                self.__sp_user.user_playlist_add_tracks(
+                    self.__user_id,
+                    playlist_id=playlist_id,
+                    tracks=batch
+                )
+
+        print("Playlist done")
 
     def get_playlists(self):
         return self.__sp_user.user_playlists(self.__user_id)

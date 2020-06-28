@@ -1,8 +1,9 @@
 
 from .color import Color
 import pandas as pd
-from spotipy.oauth2 import SpotifyClientCredentials
+from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 import spotipy
+from spotipy import SpotifyException
 import math
 import json
 import hashlib
@@ -10,7 +11,13 @@ import os
 CACHE_DIR = "cache/"
 ACH_IDS = "ids.pkl"
 CRED_PATH_SPOTIFY = "credentials-spotify.json"
+UNAUTHORIZED_ST_CODE = 401
 MARKETS = ["FR", "US"]
+PLAYLIST_NAME = "Mon Bot le DJ"
+PLAYLIST_DESC = "Auto generated playlist for the"\
+                " project mon-bot-le-dj, visit"\
+                " https://github.com/QuVil/mon-bot-le-dj"\
+                " for more informations"
 
 
 class Muzik:
@@ -19,8 +26,9 @@ class Muzik:
         self.__create_cache_dir()
         self.ids = self.__read_cached_ids()
         if public_api:
-            self.sp = self.__connect_spotify()
-        self.sp_user = self.__connect_spotify_user()
+            self.__sp = self.__connect_spotify()
+        self.__sp_user = self.__connect_spotify_user()
+        self.__user_id = self.__sp_user.me()["id"]
 
     def __create_cache_dir(self):
         """
@@ -66,8 +74,13 @@ class Muzik:
             **data,
             state=state,
         )
+        return self.__get_spotify_user(
+            self.__user_credentials.get_access_token(as_dict=(False))
+        )
+
+    def __get_spotify_user(self, token):
         return spotipy.Spotify(
-            auth=self.__user_credentials.get_access_token(as_dict=False)
+            auth=token
         )
 
     def __connect_spotify(self):
@@ -83,6 +96,21 @@ class Muzik:
         return spotipy.Spotify(auth_manager=SpotifyClientCredentials(
             **auth
         ))
+
+    def __update_token(self):
+        cached = self.__user_credentials.get_cached_token()
+        if self.__user_credentials.is_token_expired(cached):
+            refreshed = self.__user_credentials.refresh_access_token(
+                cached["refresh_token"]
+            )
+            self.__sp_user = self.__get_spotify_user(
+                refreshed["access_token"]
+            )
+        # try:
+        #     _ = self.__sp_user.me()
+        # except SpotifyException as e:
+        #     e.http_status == UNAUTHORIZED_ST_CODE:
+        #     cached = self.__user_credentials.get_cached_token()
 
     def __search_strings(self, row):
         """
@@ -136,19 +164,30 @@ class Muzik:
         ids = pd.Series(index=indexs,
                         dtype=str, name="ids")
         bad_formats = []
+        # chosing the endpoint
+        # by default try to take the public one, if doesn't exists
+        # (public_api = False), use the private one
+        try:
+            endpoint = self.__sp
+        except AttributeError:
+            endpoint = self.__sp_user
+        # format string padding used for the debug output
         str_format = int(math.log(len(songs), 10)) + 1
         for idx, (_, content) in enumerate(songs.iterrows()):
             searches = self.__search_strings(content)
             bad_format = []
             for search, market in searches:
                 try:
-                    res = self.spotify.search(search, market=market)
+                    res = endpoint.search(search, market=market)
                     track = res['tracks']['items'][0]
                 except IndexError as e:
                     bad_format.append((search, market))
                 else:
+                    # succeed to fetch an id
                     break
             else:
+                # did not managed to find an id with all the search strings
+                # provided, set the id of the song to None
                 bad_formats.append(bad_format)
                 ids.iloc[idx] = None
                 print(f"{Color.FAIL}"
@@ -166,6 +205,13 @@ class Muzik:
                   f"{Color.ENDC}"
                   f" : {id} {name} {artist} {album}")
         return ids
+
+    def __create_user_playlist(self):
+        ret = self.__sp_user.user_playlist_create(user=self.__user_id,
+                                                  name=PLAYLIST_NAME,
+                                                  public=True,
+                                                  description=PLAYLIST_DESC)
+        return ret
 
     def update(self, ach):
         """
@@ -185,5 +231,28 @@ class Muzik:
         self.ids = self.ids.drop(to_remove)
         # adds the new songs from the ach sheet
         news = pd.concat([common_songs, new_songs]).drop_duplicates(keep=False)
-        new_ids = self.__fetch_id(news)
-        self.ids = pd.concat([self.ids, new_ids])
+        if len(news) > 0:
+            new_ids = self.__fetch_id(news)
+            self.ids = pd.concat([self.ids, new_ids])
+        else:
+            print("Local list already updated")
+
+    def create_playlist(self, playlist):
+        # check if the playlist already exists
+        user_playlists = self.__sp_user.user_playlists(self.__user_id)
+        playlist_id = None
+        if len(user_playlists["items"]) > 0:
+            for user_pl in user_playlists["items"]:
+                if user_pl["name"] == PLAYLIST_NAME:
+                    playlist_id = user_pl["id"]
+                    break
+        # at this point, if the playlist exists, the id is stored in
+        # playlist_id, otherwise we have still a None value
+        if playlist_id is None:
+            return self.__create_user_playlist()
+        else:
+            return playlist_id
+        pass
+
+    def get_playlists(self):
+        return self.__sp_user.user_playlists(self.__user_id)

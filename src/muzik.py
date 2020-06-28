@@ -125,4 +125,4 @@ class Muzik:
         # adds the new songs from the ach sheet
         news = pd.concat([common_songs, new_songs]).drop_duplicates(keep=False)
         new_ids = self.__fetch_id(news)
-        self.new = new_ids
+        self.ids = pd.concat([self.ids, new_ids])

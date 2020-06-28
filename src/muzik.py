@@ -283,21 +283,26 @@ class Muzik:
         self.__update_token()
         # turn the index to DataFrame objects
         new_songs = ach.index.to_frame().reset_index(drop=True)
-        old_songs = self.ids.index.to_frame().reset_index(drop=True)
-        # get the list of the common values
-        common_songs = new_songs.merge(old_songs, how='inner')
-        # remove the songs that are not anymore in the cached df
-        depr = pd.concat([common_songs, old_songs]).drop_duplicates(keep=False)
-        to_remove = pd.MultiIndex.from_frame(depr)
-        if len(to_remove) > 0:
-            self.ids = self.ids.drop(to_remove)
-        # adds the new songs from the ach sheet
-        news = pd.concat([common_songs, new_songs]).drop_duplicates(keep=False)
-        if len(news) > 0:
-            new_ids = self.__fetch_id(news)
-            self.ids = pd.concat([self.ids, new_ids])
+        if self.ids.empty:
+            # in case the cached list was empty, simply fetch the whole
+            # list
+            self.ids = self.__fetch_id(new_songs)
         else:
-            print("Local list already updated")
+            old_songs = self.ids.index.to_frame().reset_index(drop=True)
+            # get the list of the common values
+            common_songs = new_songs.merge(old_songs, how='inner')
+            # remove the songs that are not anymore in the cached df
+            depr = pd.concat([common_songs, old_songs]).drop_duplicates(keep=False)
+            to_remove = pd.MultiIndex.from_frame(depr)
+            if len(to_remove) > 0:
+                self.ids = self.ids.drop(to_remove)
+            # adds the new songs from the ach sheet
+            news = pd.concat([common_songs, new_songs]).drop_duplicates(keep=False)
+            if len(news) > 0:
+                new_ids = self.__fetch_id(news)
+                self.ids = pd.concat([self.ids, new_ids])
+            else:
+                print("Local list already updated")
         # save updated list in cache
         self.ids.to_pickle(CACHE_DIR + ACH_IDS)
 

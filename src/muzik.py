@@ -5,6 +5,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import spotipy
 import math
 import json
+import hashlib
 import os
 CACHE_DIR = "cache/"
 ACH_IDS = "ids.pkl"
@@ -14,11 +15,26 @@ MARKETS = ["FR", "US"]
 
 class Muzik:
 
-    def __init__(self):
-        self.ids = self.__read_cache()
-        self.spotify = self.__conect_spotify()
+    def __init__(self, public_api=False):
+        self.__create_cache_dir()
+        self.ids = self.__read_cached_ids()
+        if public_api:
+            self.sp = self.__connect_spotify()
+        self.sp_user = self.__connect_spotify_user()
 
-    def __read_cache(self) -> pd.Series:
+    def __create_cache_dir(self):
+        """
+        Create cache dir at `CACHE_DIR` if doesn't already exists    
+        """
+        if not os.path.isdir(CACHE_DIR):
+            os.mkdir(CACHE_DIR)
+
+    def __read_cached_ids(self) -> pd.Series:
+        """
+        Read the cached already fetched ids from the cache folder
+        either returns the cached pd.Series, or empty series if
+        no file there
+        """
         path = CACHE_DIR + ACH_IDS
         if os.path.exists(path):
             print(f"reading data from cache file {path}")
@@ -27,11 +43,45 @@ class Muzik:
             df = pd.Series()
         return df
 
-    def __conect_spotify(self):
+    def __read_credentials(self):
+        """
+        Opens and return the content of `CRED_PATH_SPOTIFY` as
+        a python dict
+        """
         with open(CRED_PATH_SPOTIFY, 'r') as handle:
             data = json.load(handle)
+        return data
+
+    def __connect_spotify_user(self):
+        """
+        Connect to the API using the spotify user credentials
+        needs more informations than the other method, but can
+        access to personnal informations (including playlists :o)
+        of the user
+        """
+        data = self.__read_credentials()
+        # generate a unique random number to prevent csrf
+        state = hashlib.sha256(os.urandom(1024)).hexdigest()
+        self.__user_credentials = SpotifyOAuth(
+            **data,
+            state=state,
+        )
+        return spotipy.Spotify(
+            auth=self.__user_credentials.get_access_token(as_dict=False)
+        )
+
+    def __connect_spotify(self):
+        """
+        Connect to the public API of Spotify, useful to fetch songs ids
+        since the API limite rate is higher here, however not really
+        useful to create playlists and stuff
+        """
+        data = self.__read_credentials()
+        auth = {}
+        auth["client_id"] = data["client_id"]
+        auth["client_secret"] = data["client_secret"]
         return spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-            **data
+            **auth
         ))
 
     def __search_strings(self, row):

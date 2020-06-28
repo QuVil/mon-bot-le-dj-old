@@ -280,6 +280,7 @@ class Muzik:
         input:
             - ach : raw sheet from google with multiindex
         """
+        self.__update_token()
         # turn the index to DataFrame objects
         new_songs = ach.index.to_frame().reset_index(drop=True)
         old_songs = self.ids.index.to_frame().reset_index(drop=True)
@@ -298,6 +299,13 @@ class Muzik:
             print("Local list already updated")
 
     def create_playlist(self, playlist):
+        """
+        Create (or replace) a playlist containing all the songs provided
+        in the playlists DataFrame
+        input:
+            - playlist : pd.DataFrame indexed by a MultiIndex with
+                         genre, artist, song, ...
+        """
         self.__update_token()
         playlist_id = self.__get_playlist_id()
         track_ids = self.ids[playlist.index].dropna().values
@@ -323,4 +331,5 @@ class Muzik:
         print("Playlist done")
 
     def get_playlists(self):
+        self.__update_token()
         return self.__sp_user.user_playlists(self.__user_id)

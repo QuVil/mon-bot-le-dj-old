@@ -1,14 +1,16 @@
 
+from .color import Color
+import pandas as pd
+from spotipy.oauth2 import SpotifyClientCredentials
+import spotipy
+import math
+import json
+import os
 CACHE_DIR = "cache/"
 ACH_IDS = "ids.pkl"
 CRED_PATH_SPOTIFY = "credentials-spotify.json"
 MARKETS = ["FR", "US"]
 
-import os
-import json
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-import pandas as pd
 
 class Muzik:
 
@@ -61,6 +63,7 @@ class Muzik:
     def __fetch_id(self, df):
         ids = pd.Series(index=df.index, dtype=str, name="ids")
         bad_formats = []
+        str_format = int(math.log(len(df), 10)) + 1
         for idx, (_, content) in enumerate(df.iterrows()):
             searches = self.__search_string(content)
             bad_format = []
@@ -69,20 +72,26 @@ class Muzik:
                     res = self.spotify.search(search, market=market)
                     track = res['tracks']['items'][0]
                 except IndexError as e:
-                    print(f"{search} not in spotify")
                     bad_format.append((search, market))
                 else:
                     break
             else:
                 bad_formats.append(bad_format)
                 ids.iloc[idx] = None
+                print(f"{Color.FAIL}"
+                      f"{idx + 1:<{str_format}}/{len(df)}"
+                      f"{Color.ENDC}"
+                      f" : {search} not in Spotify")
                 continue
             album = track['album']['name']
             name = track['name']
             artist = track['artists'][0]['name']
             id = track['id']
             ids.iloc[idx] = id
-            print(f"{idx + 1:<4}/{len(df)} : {id} {name} {artist} {album}")
+            print(f"{Color.OKGREEN}"
+                  f"{idx + 1:<{str_format}}/{len(df)}"
+                  f"{Color.ENDC}"
+                  f" : {id} {name} {artist} {album}")
         return ids
 
     def update(self, ach):

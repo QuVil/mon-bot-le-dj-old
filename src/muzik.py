@@ -34,7 +34,18 @@ class Muzik:
             **data
         ))
 
-    def __search_string(self, row):
+    def __search_strings(self, row):
+        """
+        Creates the search string for the Spotify API based on
+        the information of the row
+        Returns a list of multiple strings, to take into account
+        if there is special characters (like "'")
+        or multiple markets
+        input:
+            - row : pd.Series with genre, artists, songs,...
+        output:
+            - searches : list of tuples (search string, market)
+        """
         search = ""
         # artists
         artists = list(map(str.strip, row.artist.split(",")))
@@ -77,7 +88,7 @@ class Muzik:
         bad_formats = []
         str_format = int(math.log(len(songs), 10)) + 1
         for idx, (_, content) in enumerate(songs.iterrows()):
-            searches = self.__search_string(content)
+            searches = self.__search_strings(content)
             bad_format = []
             for search, market in searches:
                 try:

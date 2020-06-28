@@ -81,6 +81,10 @@ class Muzik:
         )
 
     def __get_spotify_user(self, token):
+        """
+        Returns a Spotify client authentified with the provided
+        token
+        """
         return spotipy.Spotify(
             auth=token
         )
@@ -100,6 +104,11 @@ class Muzik:
         ))
 
     def __update_token(self):
+        """
+        Updates the token if it has expired
+        !! may not work flawlessely (probably not in fact),
+        hard to test since the token lasts for 1 hour haha
+        """
         cached = self.__user_credentials.get_cached_token()
         if self.__user_credentials.is_token_expired(cached):
             refreshed = self.__user_credentials.refresh_access_token(
@@ -209,17 +218,47 @@ class Muzik:
         return ids
 
     def __create_user_playlist(self):
+        """
+        Creates a new playlist using PLAYLIST_NAME, PLAYLIST_DESC
+        also pushes playlist cover PLAYLIST_COVER
+        return:
+            - playlist_id : string containing the id of the playlist
+        """
         # create the playlist with name, description, visibility
+        print(f"Creating {PLAYLIST_NAME}...")
         ret = self.__sp_user.user_playlist_create(user=self.__user_id,
                                                   name=PLAYLIST_NAME,
                                                   public=True,
                                                   description=PLAYLIST_DESC)
         playlist_id = ret["id"]
         # most important, upload the playlist image
+        print(f"Uploading playlist cover from {PLAYLIST_COVER}")
         with open(PLAYLIST_COVER, "rb") as image_file:
             cover = base64.b64encode(image_file.read())
         ret = self.__sp_user.playlist_upload_cover_image(playlist_id, cover)
-        return ret
+        return playlist_id
+
+    def __get_playlist_id(self):
+        """
+        Returns the playlist id of PLAYLIST_NAME
+        if the playlist doesn't exists yet, it will create it
+        and return the id of the newly created playlist
+        """
+        # check if the playlist already exists
+        user_playlists = self.__sp_user.user_playlists(self.__user_id)
+        playlist_id = None
+        if len(user_playlists["items"]) > 0:
+            for user_pl in user_playlists["items"]:
+                if user_pl["name"] == PLAYLIST_NAME:
+                    playlist_id = user_pl["id"]
+                    break
+        # at this point, if the playlist exists, the id is stored in
+        # playlist_id, otherwise we have still a None value
+        if playlist_id is None:
+            print(f"Playlist {PLAYLIST_NAME} doesn't exists yet")
+            playlist_id = self.__create_user_playlist()
+        print(f"Using playlist {PLAYLIST_NAME} : {playlist_id}")
+        return playlist_id
 
     def update(self, ach):
         """
@@ -246,21 +285,7 @@ class Muzik:
             print("Local list already updated")
 
     def create_playlist(self, playlist):
-        # check if the playlist already exists
-        user_playlists = self.__sp_user.user_playlists(self.__user_id)
-        playlist_id = None
-        if len(user_playlists["items"]) > 0:
-            for user_pl in user_playlists["items"]:
-                if user_pl["name"] == PLAYLIST_NAME:
-                    playlist_id = user_pl["id"]
-                    break
-        # at this point, if the playlist exists, the id is stored in
-        # playlist_id, otherwise we have still a None value
-        # if playlist_id is None:
-            # return self.__create_user_playlist()
-        return self.__create_user_playlist()
-        # else:
-        #     return playlist_id
+        playlist_id = self.__get_playlist_id()
         pass
 
     def get_playlists(self):

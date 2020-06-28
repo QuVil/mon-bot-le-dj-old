@@ -121,14 +121,12 @@ class Muzik:
         !! may not work flawlessely (probably not in fact),
         hard to test since the token lasts for 1 hour haha
         """
-        # cached = self.__user_credentials.get_cached_token()
-        # if self.__user_credentials.is_token_expired(cached):
-        #     refreshed = self.__user_credentials.refresh_access_token(
-        #         cached["refresh_token"]
-        #     )
-        #     self.__sp_user = self.__get_spotify_user(
-        #         refreshed["access_token"]
-        #     )
+        # built-in function, does not work always good
+        cached = self.__user_credentials.get_cached_token()
+        if self.__user_credentials.is_token_expired(cached):
+            print(f"Token expired, refreshing now")
+            self.__refresh_token()
+        # handmade function just in case the one above fails
         try:
             _ = self.__sp_user.me()
         except SpotifyException as e:

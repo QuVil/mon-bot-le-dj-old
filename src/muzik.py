@@ -298,6 +298,8 @@ class Muzik:
             self.ids = pd.concat([self.ids, new_ids])
         else:
             print("Local list already updated")
+        # save updated list in cache
+        self.ids.to_pickle(CACHE_DIR + ACH_IDS)
 
     def create_playlist(self, playlist):
         """

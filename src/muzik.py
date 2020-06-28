@@ -318,7 +318,7 @@ class Muzik:
         # spotify api "only" handles 100 tracks by requests
         # so here we split the data
         batch_size = int(len(track_ids)/MAX_TRACK_PER_REQUESTS) + 1
-        batches = np.split(track_ids, batch_size)
+        batches = np.array_split(track_ids, batch_size)
         str_format = int(math.log(len(batches), 10)) + 1
         print(f"{0:<{str_format}}/{len(batches)} batch inserting...")
         # the first call `replace_tracks` clear the playlist AND

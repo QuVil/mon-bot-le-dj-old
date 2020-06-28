@@ -47,10 +47,11 @@ class Muzik:
         """
         path = CACHE_DIR + ACH_IDS
         if os.path.exists(path):
-            print(f"reading data from cache file {path}")
+            print(f"Reading data from cache file {path}")
             df = pd.read_pickle(path)
         else:
             df = pd.Series()
+        print(f"Local library contains {len(df)} songs")
         return df
 
     def __read_credentials(self):

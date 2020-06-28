@@ -8,12 +8,14 @@ import math
 import json
 import hashlib
 import os
+import base64
 CACHE_DIR = "cache/"
 ACH_IDS = "ids.pkl"
 CRED_PATH_SPOTIFY = "credentials-spotify.json"
 UNAUTHORIZED_ST_CODE = 401
 MARKETS = ["FR", "US"]
 PLAYLIST_NAME = "Mon Bot le DJ"
+PLAYLIST_COVER = "data/playlist_cover.jpg"
 PLAYLIST_DESC = "Auto generated playlist for the"\
                 " project mon-bot-le-dj, visit"\
                 " https://github.com/QuVil/mon-bot-le-dj"\
@@ -207,10 +209,16 @@ class Muzik:
         return ids
 
     def __create_user_playlist(self):
+        # create the playlist with name, description, visibility
         ret = self.__sp_user.user_playlist_create(user=self.__user_id,
                                                   name=PLAYLIST_NAME,
                                                   public=True,
                                                   description=PLAYLIST_DESC)
+        playlist_id = ret["id"]
+        # most important, upload the playlist image
+        with open(PLAYLIST_COVER, "rb") as image_file:
+            cover = base64.b64encode(image_file.read())
+        ret = self.__sp_user.playlist_upload_cover_image(playlist_id, cover)
         return ret
 
     def update(self, ach):
@@ -248,10 +256,11 @@ class Muzik:
                     break
         # at this point, if the playlist exists, the id is stored in
         # playlist_id, otherwise we have still a None value
-        if playlist_id is None:
-            return self.__create_user_playlist()
-        else:
-            return playlist_id
+        # if playlist_id is None:
+            # return self.__create_user_playlist()
+        return self.__create_user_playlist()
+        # else:
+        #     return playlist_id
         pass
 
     def get_playlists(self):

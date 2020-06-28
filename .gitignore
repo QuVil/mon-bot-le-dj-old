@@ -136,3 +136,4 @@ google-credentials.json
 /.dir-locals.el
 /credentials-spotify.json
 /credentials-sheets.json
+/cache/

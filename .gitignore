@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Jetbrains folder
+.idea
+
 # C extensions
 *.so
 
@@ -130,3 +133,7 @@ dmypy.json
 
 # Google credentials file
 google-credentials.json
+/.dir-locals.el
+/credentials-spotify.json
+/credentials-sheets.json
+/cache/

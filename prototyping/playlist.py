@@ -4,9 +4,11 @@ import pandas as pd
 from .data import load_from_api, load_from_cache
 
 
-def create_playlist(people=None, count_factor=.1, inhib_factor=2, min_score=5, size=300, default_grade=5):
+def create_playlist(people=None, count_factor=.1, inhib_factor=2, min_score=5.5, size=300, default_grade=5,
+                    eliminating_grade=4.6):
     """
     Create a personalized playlist with ACHMUSIK data loaded directly from the sheet
+    :param eliminating_grade: minimum required grade for every person (unless not graded yet)
     :param people: The people presently present at the gathering to include in the scoring
     :param count_factor: multiplicative factor to help properly graded songs rise to the top
     :param inhib_factor: the added factor to scoring is count_factor * (COUNT - len(people) / inhib_factor)
@@ -50,6 +52,9 @@ def create_playlist(people=None, count_factor=.1, inhib_factor=2, min_score=5, s
     print("Creating playlist...")
     data = data.sort_values("score", ascending=False)
     data["rank"] = data["score"].rank(method="min")
+
+    # Eliminating tracks with a grade under the required minimum
+    data = data[data[data.columns[:-4]].min(axis=1) > eliminating_grade]
 
     playlist = data.sample(n=size, weights="rank")
 

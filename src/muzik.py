@@ -108,6 +108,11 @@ class Muzik:
         ))
 
     def __refresh_token(self):
+        """
+        Refreshes the tokenn if it has expired or not
+        and updates the sp_user Spotify Interface with
+        the new token
+        """
         cached = self.__user_credentials.get_cached_token()
         refreshed = self.__user_credentials.refresh_access_token(
             cached["refresh_token"]

@@ -3,15 +3,22 @@ import random
 import pandas as pd
 from .data import load_from_api, load_from_cache
 
-KEPT_PEOPLE = ["Qu", "Gr", "Vi", "Ro"]
-DEFAULT_GRADE = 5
-COUNT_FACTOR = .1
-COUNT_INHIB = len(KEPT_PEOPLE) // 2
-MIN_SCORE = 5
-PLAYLIST_SIZE = 300  # Can be an int or a fraction 0 < q <= 1 of the songs
 
+def create_playlist(people=None, count_factor=.1, inhib_factor=2, min_score=5, size=300, default_grade=5):
+    """
+    Create a personalized playlist with ACHMUSIK data loaded directly from the sheet
+    :param people: The people presently present at the gathering to include in the scoring
+    :param count_factor: multiplicative factor to help properly graded songs rise to the top
+    :param inhib_factor: the added factor to scoring is count_factor * (COUNT - len(people) / inhib_factor)
+    :param min_score: minimum score for songs to be kept in the roulette wheel
+    :param size: size of the playlist
+    :param default_grade: grade applied to songs not graded by any member of people yet
+    :return:
+    """
+    if people is None:
+        people = ["Qu", "Gr", "Vi", "Ro"]
+    count_inhib = len(people) // inhib_factor
 
-def create_playlist():
     print("Loading data from API...")
     data = load_from_api()
 
@@ -25,29 +32,26 @@ def create_playlist():
         data[data.columns[i]] = pd.to_numeric(data[data.columns[i]], errors='coerce')
 
     # Keeping only present people at the hypothetical party!
-    data = data.filter(KEPT_PEOPLE)
+    data = data.filter(people)
 
     # Hard to do this shit inplace -- if no grades at all, give it a chance to play with default grade
-    data = data.dropna(how="all").append(data[data.isnull().all(axis=1)].fillna(DEFAULT_GRADE))
+    data = data.dropna(how="all").append(data[data.isnull().all(axis=1)].fillna(default_grade))
 
     # Mean of all notes for each track
     data["mean"] = data[data.columns].mean(axis=1)
     # Amount of notes for each track
     data["count"] = data.count(axis=1) - 1
     # Helping songs graded by more people in the group
-    data["score"] = data["mean"] + (COUNT_FACTOR * (data["count"] - COUNT_INHIB))
+    data["score"] = data["mean"] + (count_factor * (data["count"] - count_inhib))
     # Truncating to keep only the acceptable songs
-    data = data[data["score"] > MIN_SCORE]
+    data = data[data["score"] > min_score]
 
     # Using ranking of scores as weight for the playlist bootstrap
     print("Creating playlist...")
     data = data.sort_values("score", ascending=False)
     data["rank"] = data["score"].rank(method="min")
 
-    if PLAYLIST_SIZE < 1:
-        playlist = data.sample(frac=PLAYLIST_SIZE, weights="rank")
-    else:
-        playlist = data.sample(n=PLAYLIST_SIZE, weights="rank")
+    playlist = data.sample(n=size, weights="rank")
 
     # Rearranging playlist to avoid sudden genre changes
     genres = [playlist for _, playlist in playlist.groupby("genre")]

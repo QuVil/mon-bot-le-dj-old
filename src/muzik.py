@@ -22,7 +22,7 @@ PLAYLIST_COVER = "data/playlist_cover.jpg"
 PLAYLIST_DESC = "Auto generated playlist for the"\
                 " project mon-bot-le-dj, visit"\
                 " https://github.com/QuVil/mon-bot-le-dj"\
-                " for more informations"
+                " for more information"
 
 
 class Muzik:

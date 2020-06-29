@@ -130,14 +130,14 @@ class Muzik:
         # built-in function, does not work always good
         cached = self.__user_credentials.get_cached_token()
         if self.__user_credentials.is_token_expired(cached):
-            print(f"Token expired, refreshing now")
+            print("Token expired, refreshing now")
             self.__refresh_token()
         # handmade function just in case the one above fails
         try:
             _ = self.__sp_user.me()
         except SpotifyException as e:
             if e.http_status == UNAUTHORIZED_ST_CODE:
-                print(f"Token expired, refreshing now")
+                print("Token expired, refreshing now")
                 self.__refresh_token()
 
     def __search_strings(self, row):
@@ -208,7 +208,7 @@ class Muzik:
                 try:
                     res = endpoint.search(search, market=market)
                     track = res['tracks']['items'][0]
-                except IndexError as e:
+                except IndexError:
                     bad_format.append((search, market))
                 else:
                     # succeed to fetch an id

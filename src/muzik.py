@@ -37,7 +37,7 @@ class Muzik:
 
     def __create_cache_dir(self):
         """
-        Create cache dir at `CACHE_DIR` if doesn't already exists    
+        Create cache dir at `CACHE_DIR` if doesn't already exists
         """
         if not os.path.isdir(CACHE_DIR):
             os.mkdir(CACHE_DIR)
@@ -299,12 +299,14 @@ class Muzik:
             # get the list of the common values
             common_songs = new_songs.merge(old_songs, how='inner')
             # remove the songs that are not anymore in the cached df
-            depr = pd.concat([common_songs, old_songs]).drop_duplicates(keep=False)
+            depr = pd.concat([common_songs, old_songs]
+                             ).drop_duplicates(keep=False)
             to_remove = pd.MultiIndex.from_frame(depr)
             if len(to_remove) > 0:
                 self.ids = self.ids.drop(to_remove)
             # adds the new songs from the ach sheet
-            news = pd.concat([common_songs, new_songs]).drop_duplicates(keep=False)
+            news = pd.concat([common_songs, new_songs]
+                             ).drop_duplicates(keep=False)
             if len(news) > 0:
                 new_ids = self.__fetch_id(news)
                 self.ids = pd.concat([self.ids, new_ids])
@@ -348,7 +350,8 @@ class Muzik:
         )
         if len(batches) > 1:
             for idx, batch in enumerate(batches[1:]):
-                print(f"{idx+2:<{str_format}}/{len(batches)} batch inserting...")
+                print(f"{idx+2:<{str_format}}/{len(batches)}"
+                      " batch inserting...")
                 # add the rest of the tracks
                 self.__sp_user.user_playlist_add_tracks(
                     self.__user_id,
